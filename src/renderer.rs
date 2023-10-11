@@ -1,7 +1,7 @@
 use std::error::Error;
+use std::ffi::OsStr;
 use std::fs;
 use headless_chrome::Browser;
-use tempfile::{NamedTempFile, tempfile};
 #[derive(Default)]
 pub struct RendererConfig {}
 
@@ -13,7 +13,10 @@ pub struct Renderer {
 impl Renderer {
     pub fn new(config: RendererConfig) -> Result<Renderer, Box<dyn Error>> {
         println!("Starting browser env..");
-        let browser = Browser::default()?;
+        let browser = Browser::new(headless_chrome::LaunchOptions {
+            args: vec![OsStr::new("--allow-file-access-from-files"), OsStr::new("--disable-dev-shm-usage"), OsStr::new("--export-tagged-pdf")],
+            ..Default::default()
+        })?;
         Ok(Renderer {
             browser,
             config

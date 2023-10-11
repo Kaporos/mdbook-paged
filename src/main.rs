@@ -1,10 +1,11 @@
 mod renderer;
+mod process_markdown;
 
 use std::error::Error;
-use markdown::{CompileOptions, Options};
 use mdbook::{renderer::RenderContext, BookItem};
 use std::{fs, io};
 use serde_derive::{Deserialize, Serialize};
+use crate::process_markdown::Processor;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -23,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let ctx = RenderContext::from_json(&mut stdin).unwrap();
     let value: Option<PdfConfig> = ctx.config.get_deserialized_opt("output.paged")?;
     println!("{:?}", value);
-    println!("{:?}", ctx.config);
+    println!("{:?}", ctx.root);
     let mut pdf_path = ctx.destination.join("output.pdf");
 
     if let Some(value) = value {
@@ -37,21 +38,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("{}", PRINT_HOOK);
     let mut content_html = String::new();
+
+    let processor = Processor::new(ctx.root.join("src"));
+
     for item in ctx.book.iter() {
         if let BookItem::Chapter(ref ch) = *item {
             println!("Processing {}..", ch.name);
-            let html = markdown::to_html_with_options(
-                &ch.content,
-                &Options {
-                    compile: CompileOptions {
-                        allow_dangerous_html: true,
-                        allow_dangerous_protocol: true,
-                        ..CompileOptions::default()
-                    },
-                    ..Options::default()
-                },
-            )
-            .unwrap();
+            let html = processor.process_chapter(ch)?;
             content_html.push_str(&html);
         }
     };
