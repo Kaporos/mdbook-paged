@@ -21,7 +21,7 @@ document.location.href = "./output.pdf"
 fn main() -> Result<(), Box<dyn Error>> {
     let mut stdin = io::stdin();
     let ctx = RenderContext::from_json(&mut stdin).unwrap();
-    let value: Option<PdfConfig> = ctx.config.get_deserialized_opt("output.pdf")?;
+    let value: Option<PdfConfig> = ctx.config.get_deserialized_opt("output.paged")?;
     println!("{:?}", value);
     println!("{:?}", ctx.config);
     let mut pdf_path = ctx.destination.join("output.pdf");
