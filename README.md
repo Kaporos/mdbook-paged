@@ -1,10 +1,9 @@
 # mdbook-paged
 
 ## Instalation
-
-  git clone https://github.com/Kaporos/mdbook-paged
- 	cd mdbook-paged
- 	cargo install --path .
+    git clone https://github.com/Kaporos/mdbook-paged
+    cd mdbook-paged
+    cargo install --path .
 
 ## Configuration
 
