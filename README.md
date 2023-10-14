@@ -15,6 +15,22 @@ Add this to your book.toml to run this tool on build :)
 
 Your PDF output will be placed in book/pdf/output.pdf
 
+## Running
+
+By default, the pdf will be built only if `GEN_PDF` env variable is set. 
+
+    GEN_PDF=1 mdbook build
+
+if you want mdbook-paged to run either is env is not set, just add
+
+```toml
+
+[output.paged]
+always=true
+```
+
+and pdf will be built automatically at each mdbook build.
+
 ### Injecting into HTML
 
 If you want to inject your pdf to the html website print feature, just enable the config like this:

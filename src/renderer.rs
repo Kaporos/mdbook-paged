@@ -29,9 +29,8 @@ impl Renderer {
             .suffix(".html")
             .tempfile()?;
         fs::write(file.path(), raw_html_content)?;
-        //write!(file, "{raw_html_content}")?;
         let tab= self.browser.new_tab()?;
-        println!("{:?}", file.path());
+        //println!("{:?}", file.path());
         let url = format!("file://{}", file.path().display());
         tab.navigate_to(&url)?
             .wait_until_navigated()?;

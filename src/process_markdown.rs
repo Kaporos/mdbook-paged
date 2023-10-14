@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use mdbook::book::Chapter;
 use pulldown_cmark::{CowStr, Event, Tag};
 
@@ -24,9 +24,17 @@ impl Processor {
             Event::Start(tag) => {
                 Event::Start(match tag.clone() {
                     Tag::Image(ltype, source, title) => {
-                        Tag::Image(ltype, self.compute_image_source(source, relative_dir).into(), title)
+                        let absolute_path = self.path_resolve(source, relative_dir);
+                        let mut file_path = String::from("file://");
+                        file_path.push_str(&absolute_path);
+                        Tag::Image(ltype, file_path.into(), title)
+                    },
+                    //Tag::Link(ltype, source, title) => {
+                    //    Tag::Link(ltype, self.path_resolve(source, relative_dir).into(), title)
+                    //},
+                    _ => {
+                        tag
                     }
-                    _ => tag
                 })
             }
            _ => event
@@ -38,20 +46,49 @@ impl Processor {
         Ok(html_output)
     }
 
-    fn compute_image_source<'a>(&self, mut old_source: CowStr<'a>, relative_dir: &Path) -> String {
-        let prefix = "file://";
-        let mut new_source = String::from(prefix);
-        if !old_source.starts_with("/"){
-            new_source.push_str(relative_dir.to_str().unwrap());
-            new_source.push_str("/");
+    fn path_resolve<'a>(&self, mut old_source: CowStr<'a>, relative_dir: &Path) -> String {
+        let old_copy = old_source.clone();
+        let mut old_source: &str = &*old_source;
+        if old_source.starts_with("/") {
+            old_source = &old_source[1..old_source.len()]
         }
-        if (old_source.starts_with("./")) {
-            old_source = old_source.chars().skip(2).collect::<String>().into();
+        let old_path = Path::new(&*old_source);
+        let old_path_absolute = normalize_path(relative_dir.join(old_path));
+        if std::fs::metadata(old_path_absolute.clone()).is_ok() {
+            let path = old_path_absolute.to_str().unwrap();
+            return path.into();
         }
-        new_source.push_str(&*old_source);
-        println!("Old: {old_source} - new: {new_source}");
-        new_source
-
+       return old_copy.into_string();
     }
 }
 
+
+//Copy pasted function from Cargo's source code.
+//This function computes paths like /root/theo/../toto to /root/toto
+// https://github.com/rust-lang/cargo/blob/fede83ccf973457de319ba6fa0e36ead454d2e20/src/cargo/util/paths.rs#L61
+fn normalize_path(path: PathBuf) -> PathBuf {
+    let mut components = path.components().peekable();
+    let mut ret = if let Some(c @ Component::Prefix(..)) = components.peek().cloned() {
+        components.next();
+        PathBuf::from(c.as_os_str())
+    } else {
+        PathBuf::new()
+    };
+
+    for component in components {
+        match component {
+            Component::Prefix(..) => unreachable!(),
+            Component::RootDir => {
+                ret.push(component.as_os_str());
+            }
+            Component::CurDir => {}
+            Component::ParentDir => {
+                ret.pop();
+            }
+            Component::Normal(c) => {
+                ret.push(c);
+            }
+        }
+    }
+    ret
+}
